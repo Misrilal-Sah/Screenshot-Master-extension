@@ -7,8 +7,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'capture') {
     handleCapture(msg.mode);
     sendResponse({ ok: true });
+    return true;
   }
-  return true; // async
 });
 
 // Keyboard shortcuts
@@ -38,7 +38,7 @@ async function handleCapture(mode) {
 
 // ─── Visible Area ────────────────────────────────────────────
 async function captureVisible(tab) {
-  const dataUrl = await captureTab();
+  const dataUrl = await captureTab(tab.windowId);
   openPreview(tab.url, [dataUrl], 'visible', null);
 }
 
@@ -76,12 +76,12 @@ async function captureFullPage(tab) {
     await sleep(80); // brief wait for repaint
 
     try {
-      const dataUrl = await captureTab();
+      const dataUrl = await captureTab(tab.windowId);
       slices.push(dataUrl);
     } catch (err) {
       console.warn(`Slice ${i} capture failed, retrying...`, err.message);
       await sleep(1000);
-      const dataUrl = await captureTab();
+      const dataUrl = await captureTab(tab.windowId);
       slices.push(dataUrl);
     }
 
@@ -126,7 +126,7 @@ async function handleSelectionResult(tab, bounds) {
   // Small delay before capture
   await sleep(100);
   // Capture the visible tab
-  const dataUrl = await captureTab();
+  const dataUrl = await captureTab(tab.windowId);
   openPreview(tab.url, [dataUrl], 'selected', { crop: { x, y, width, height, dpr } });
 }
 
@@ -147,10 +147,9 @@ function openPreview(pageUrl, images, mode, meta) {
 }
 
 // ─── Tab Capture Helper ──────────────────────────────────────
-// Wraps captureVisibleTab to handle the windowId properly
-async function captureTab() {
-  const win = await chrome.windows.getCurrent();
-  return await chrome.tabs.captureVisibleTab(win.id, { format: 'png' });
+// Captures the visible area of the tab's window
+async function captureTab(windowId) {
+  return await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
 }
 
 // ─── Helpers ─────────────────────────────────────────────────

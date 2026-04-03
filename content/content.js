@@ -12,6 +12,7 @@
   let savedOverflow = '';
   let selectionOverlay = null;
   let captureOverlay = null;
+  let escHandler = null;
 
   // ─── Message Listener ────────────────────────────────────
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -295,7 +296,7 @@
     });
 
     // Escape to cancel
-    const escHandler = (e) => {
+    escHandler = (e) => {
       if (e.key === 'Escape') {
         removeSelectionOverlay();
         document.removeEventListener('keydown', escHandler);
@@ -310,6 +311,10 @@
   function removeSelectionOverlay() {
     const existing = document.getElementById('sm-selection-overlay');
     if (existing) existing.remove();
+    if (escHandler) {
+      document.removeEventListener('keydown', escHandler);
+      escHandler = null;
+    }
     selectionOverlay = null;
   }
 })();
